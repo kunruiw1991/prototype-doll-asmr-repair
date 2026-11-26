@@ -54,17 +54,19 @@ An ultra-faithful, zero-build **24-step interactive ASMR Doll Restoration Studio
 
 ---
 
-## 🧪 Automated Tests & Subscription-Only Claude & Codex Audit
+## 🧪 Automated Tests & Original-Video Reproducibility Audit (Claude + Codex)
+
+This repo bundles the original video reference storyboard pack (`.qa/reference/thumb_maxres.jpg` + `sb0_00..06.jpg`, covering `00:00–14:41` of `youtu.be/6Nw7Hi4Xr9s`) and auto-generates a side-by-side comparison sheet (`.qa/comparison_grid.png`) so external **Claude** and **Codex** agents visually inspect the original video right next to our build:
 
 ```bash
 # 1. Node.js state machine & bilingual data unit tests with coverage
 node --test --experimental-test-coverage tests/unit.test.js
 
-# 2. Headless Chromium Playwright E2E + multi-viewport visual verification
+# 2. Headless Chromium Playwright E2E + 19 painterly asset check + builds .qa/comparison_grid.png
 python3 tests/e2e_verify.py
 
-# 3. Real External Claude + Codex Audit (using your logged-in Claude / ChatGPT subscriptions, zero API keys!)
+# 3. Real External Claude + Codex Video-Reproducibility Audit (logged-in subscriptions, zero API keys!)
 ./scripts/local_sub_qa.sh
 ```
 
-Prompts for Web or CLI independent cross-model audits live in [`.qa/claude_prompt.md`](.qa/claude_prompt.md) (for `claude.ai/code` / `claude` CLI) and [`.qa/gpt_prompt.md`](.qa/gpt_prompt.md) (for `chatgpt.com/codex` / `codex` CLI).
+Prompts for Web or CLI independent cross-model audits live in [`.qa/claude_prompt.md`](.qa/claude_prompt.md) (for `claude.ai/code` / `claude` CLI) and [`.qa/gpt_prompt.md`](.qa/gpt_prompt.md) (for `chatgpt.com/codex` / `codex` CLI), both referencing `.qa/comparison_grid.png` and `.qa/reference/*`.

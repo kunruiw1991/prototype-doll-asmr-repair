@@ -678,11 +678,14 @@
     requestAnimationFrame(tick);
   }
 
+  const assetsReady = root.ASMRAssets ? root.ASMRAssets.loadAll() : Promise.resolve();
+
   // Expose clean inspection API for E2E tests and QA scripts
   root.__GAME__ = {
     state,
     audio,
     STEPS,
+    assetsReady,
     syncUI,
     goToStep: (idx) => {
       clearAutoAdvance();
