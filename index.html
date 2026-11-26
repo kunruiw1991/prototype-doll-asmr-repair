@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>ASMR Prototype &amp; CatNap Doll Restoration Studio | Poppy Playtime 4</title>
+  <meta name="description" content="Ultra-faithful interactive 24-step ASMR Doll Restoration Studio recreating SmileBam's Poppy Playtime 4 Abandoned Prototype Doll &amp; CatNap Restoration." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <!-- Top Studio Bar -->
+    <header id="hud-top" class="hud-top" role="banner">
+      <div class="hud-brand">
+        <span class="brand-badge" aria-hidden="true">ASMR</span>
+        <h1 id="hud-title" class="brand-title">Prototype &amp; CatNap 精密修复工坊</h1>
+      </div>
+
+      <div class="hud-episodes" role="tablist" aria-label="Episodes">
+        <button id="btn-ep-prototype" class="ep-tab active" role="tab" aria-selected="true" data-ep="prototype">
+          <span class="ep-icon" aria-hidden="true">🃏</span>
+          <span class="ep-label" data-i18n="epPrototype">EP.1 原型机 1006</span>
+        </button>
+        <button id="btn-ep-catnap" class="ep-tab" role="tab" aria-selected="false" data-ep="catnap">
+          <span class="ep-icon" aria-hidden="true">🐱</span>
+          <span class="ep-label" data-i18n="epCatnap">EP.2 瞌睡猫 CatNap</span>
+        </button>
+      </div>
+
+      <div class="hud-controls">
+        <button id="btn-chapters" class="icon-btn" title="Step Selector">
+          <span aria-hidden="true">📋</span>
+          <span id="step-counter">01/24</span>
+        </button>
+        <button id="btn-audio" class="icon-btn active" title="ASMR Audio" aria-pressed="true">
+          <span id="audio-icon" aria-hidden="true">🔊</span>
+          <span class="btn-text" data-i18n="audioOn">ASMR</span>
+        </button>
+        <button id="btn-spooky" class="icon-btn active" title="Spooky / Cozy Finale Mode" aria-pressed="true">
+          <span id="spooky-icon" aria-hidden="true">👻</span>
+          <span id="spooky-label" class="btn-text">惊悚结局</span>
+        </button>
+        <button id="btn-lang" class="icon-btn" title="Switch Language">
+          <span id="lang-label">EN</span>
+        </button>
+        <button id="btn-reset" class="icon-btn danger" title="Restart Current Episode">
+          <span aria-hidden="true">↺</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Dedicated Unobstructed Step Instruction Strip -->
+    <section id="step-banner" class="step-banner" aria-live="polite">
+      <div class="step-banner-row">
+        <div class="step-meta">
+          <span id="step-room-tag" class="room-tag">LAB DESK · 0:45</span>
+          <span id="step-name" class="step-name">拔出额头匕首</span>
+        </div>
+        <p id="step-hint" class="step-hint">按住匕首向上拔出，清理原型机头骨面具</p>
+      </div>
+      <div class="step-progress-track" aria-label="Step Progress">
+        <div id="step-progress-fill" class="step-progress-fill" style="width: 0%"></div>
+      </div>
+    </section>
+
+    <!-- Main Interactive Stage -->
+    <main id="stage-wrap" class="stage-wrap">
+      <div id="canvas-frame" class="canvas-frame">
+        <canvas id="stage-canvas" width="1280" height="720" aria-label="ASMR Doll Restoration Interactive Stage"></canvas>
+
+        <!-- Subtle Toast Feedback -->
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+        <!-- Title / Intro Overlay -->
+        <section id="overlay-intro" class="overlay-card visible" aria-label="Welcome">
+          <div class="intro-inner">
+            <div class="intro-eyebrow">SMILE BAM ASMR · 6Nw7Hi4Xr9s · 24-STEP FAITHFUL RECREATION</div>
+            <h2 id="intro-heading" class="intro-heading">废弃原型机 &amp; 瞌睡猫 ASMR 修复工坊</h2>
+            <p id="intro-sub" class="intro-sub">
+              极高精度还原 14:41 完整双篇剧情：从白色瓷砖实验室换脑、CRT 脑波同步、绿色实验舱装脊柱肋骨、经典铁柜装蜘蛛腿与利爪泡沫冲洗，到 Playcare 拧灯泡、SMILE BAM 滚筒洗衣机、木质裁缝台选错布料彩蛋与最终红光觉醒。
+            </p>
+            <div class="intro-choices">
+              <button id="btn-start-prototype" class="cta-btn primary">
+                <span class="cta-icon" aria-hidden="true">🃏</span>
+                <span class="cta-body">
+                  <strong data-i18n="startProtoTitle">开始 EP.1：原型机 1006</strong>
+                  <small data-i18n="startProtoSub">00:00–06:35 · 12 步精密机械修复</small>
+                </span>
+              </button>
+              <button id="btn-start-catnap" class="cta-btn secondary">
+                <span class="cta-icon" aria-hidden="true">🐱</span>
+                <span class="cta-body">
+                  <strong data-i18n="startCatnapTitle">直接玩 EP.2：瞌睡猫 CatNap</strong>
+                  <small data-i18n="startCatnapSub">06:40–14:41 · 12 步毛绒洗护缝补</small>
+                </span>
+              </button>
+            </div>
+            <div class="intro-resume-wrap" id="intro-resume-wrap" hidden>
+              <button id="btn-resume-save" class="resume-btn">▶ 继续上次进度</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Finale / Episode Complete Overlay -->
+        <section id="overlay-finale" class="overlay-card" aria-label="Episode Complete" hidden>
+          <div class="finale-inner">
+            <div id="finale-badge" class="finale-badge">RESTORATION COMPLETE</div>
+            <h2 id="finale-title" class="finale-title">原型机 1006 修复觉醒！</h2>
+            <p id="finale-desc" class="finale-desc">全部 12 道修复工序完成，系统已进入红光觉醒状态。</p>
+            <div class="finale-actions">
+              <button id="btn-finale-next" class="cta-btn primary">
+                <span id="finale-next-label">进入 EP.2：修复瞌睡猫 CatNap →</span>
+              </button>
+              <button id="btn-finale-replay" class="cta-btn secondary">
+                <span data-i18n="replayEp">重玩本篇</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Bottom Tactile Tool & Action Dock -->
+    <footer id="tool-dock" class="tool-dock" role="toolbar" aria-label="Restoration Tools">
+      <div class="dock-left">
+        <button id="btn-prev-step" class="nav-step-btn" title="Previous Step" aria-label="Previous Step">◀</button>
+      </div>
+      <div id="tool-tray" class="tool-tray" role="group" aria-label="Tools"></div>
+      <div class="dock-right">
+        <button id="btn-auto-assist" class="assist-btn" title="Guide / Quick Assist">
+          <span aria-hidden="true">✨</span>
+          <span data-i18n="assist">提示</span>
+        </button>
+        <button id="btn-next-step" class="nav-step-btn" title="Next Step" aria-label="Next Step">▶</button>
+      </div>
+    </footer>
+
+    <!-- Slide-Over Step / Scene Map Drawer -->
+    <aside id="chapter-drawer" class="chapter-drawer" aria-label="All 24 Restoration Steps" hidden>
+      <div class="drawer-backdrop" id="drawer-backdrop"></div>
+      <div class="drawer-panel">
+        <div class="drawer-header">
+          <h2 id="drawer-title">完整 24 步场景目录 (youtu.be/6Nw7Hi4Xr9s)</h2>
+          <button id="btn-close-drawer" class="icon-btn" aria-label="Close">✕</button>
+        </div>
+        <div id="drawer-list" class="drawer-list"></div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/art_rooms.js"></script>
+  <script src="js/art_prototype.js"></script>
+  <script src="js/art_catnap.js"></script>
+  <script src="js/art_tools.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

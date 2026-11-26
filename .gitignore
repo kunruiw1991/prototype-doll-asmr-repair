@@ -1,0 +1,5 @@
+.DS_Store
+node_modules/
+qa-reports/
+*.log
+__pycache__/
