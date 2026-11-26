@@ -114,16 +114,8 @@ def run_verification():
         }""")
         assert not missing_assets, f"Failed to load painterly assets: {missing_assets}"
 
-        # 1. Capture Intro Screen
+        # 1. Instant-play on load (no blocking intro wall!) — capture Step 1 directly!
         page.screenshot(path=os.path.join(OUT_DIR, "01_intro_desktop.png"))
-        assert page.locator("#overlay-intro").is_visible(), "Intro overlay should be visible on load"
-
-        # 2. Start Episode 1: Prototype
-        page.click("#btn-start-prototype")
-        page.wait_for_timeout(250)
-        assert not page.locator("#overlay-intro").is_visible(), "Intro overlay should hide on start"
-
-        # Step 1: Pull Dagger via real pointer drag on canvas!
         page.screenshot(path=os.path.join(OUT_DIR, "02_proto_lab_desk.png"))
         box = page.locator("#stage-canvas").bounding_box()
         assert box and box["width"] > 300, "Canvas must have valid non-zero dimensions"
@@ -165,15 +157,15 @@ def run_verification():
         page.click("#btn-auto-assist")
         page.wait_for_timeout(400)
         page.screenshot(path=os.path.join(OUT_DIR, "07_proto_spooky_finale.png"))
-        page.wait_for_timeout(1600)
-        assert page.locator("#overlay-finale").is_visible(), "Prototype finale overlay should appear"
+        page.wait_for_timeout(1350)
+        assert page.locator("#overlay-finale").is_visible(), "Prototype finale floating pill should appear"
 
         # Transition directly to Episode 2: CatNap!
         page.click("#btn-finale-next")
         page.wait_for_timeout(250)
         assert page.evaluate("window.__GAME__.state.stepIndex") == 12, "Should transition to CatNap step 12"
 
-        # Step 14: Lit Playcare Room with Broken CatNap (dangling eye + cheek tag)
+        # Step 14: Lit Playcare Room with Broken CatNap
         page.evaluate("window.__GAME__.goToStep(13); window.__GAME__.syncUI();")
         page.wait_for_timeout(220)
         page.screenshot(path=os.path.join(OUT_DIR, "08_catnap_playcare.png"))
@@ -210,16 +202,21 @@ def run_verification():
         page.click("#btn-auto-assist")
         page.wait_for_timeout(400)
         page.screenshot(path=os.path.join(OUT_DIR, "12_catnap_spooky_finale.png"))
-        page.wait_for_timeout(1600)
-        assert page.locator("#overlay-finale").is_visible(), "CatNap finale overlay should appear"
+        page.wait_for_timeout(1350)
+        assert page.locator("#overlay-finale").is_visible(), "CatNap finale floating pill should appear"
 
-        # Test Chapter Drawer + Bilingual EN Toggle + Spooky/Cozy Toggle
-        page.click("#btn-lang")
+        # Test Visual 24-Scene Gallery + Inline Reset Confirm + Spooky Toggle
         page.click("#btn-spooky")
+        page.click("#btn-reset")
+        assert page.locator("#reset-confirm").is_visible(), "Inline reset confirm should appear"
+        page.click("#btn-reset-no")
+        assert not page.locator("#reset-confirm").is_visible(), "Inline reset confirm should dismiss"
+
         page.click("#btn-chapters")
         page.wait_for_timeout(200)
-        assert page.locator("#chapter-drawer").is_visible(), "Chapter drawer should open"
-        assert page.locator(".drawer-item").count() == 24, "Drawer must list all 24 steps"
+        assert page.locator("#chapter-drawer").is_visible(), "Visual 24-scene gallery should open"
+        assert page.locator(".drawer-item").count() == 24, "Gallery must list all 24 scenes"
+        page.screenshot(path=os.path.join(OUT_DIR, "16_visual_gallery.png"))
         page.click("#btn-close-drawer")
 
         # Multi-viewport responsive check (iPad Landscape, iPad Portrait, Mobile Portrait)

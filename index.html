@@ -1,152 +1,161 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>ASMR Prototype &amp; CatNap Doll Restoration Studio | Poppy Playtime 4</title>
-  <meta name="description" content="Ultra-faithful interactive 24-step ASMR Doll Restoration Studio recreating SmileBam's Poppy Playtime 4 Abandoned Prototype Doll &amp; CatNap Restoration." />
+  <title>ASMR Prototype &amp; CatNap Studio</title>
+  <meta name="description" content="Streamlined tactile ASMR Doll Restoration Studio recreating Poppy Playtime 4 Prototype 1006 &amp; CatNap." />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div id="app" class="app-shell">
-    <!-- Top Studio Bar -->
-    <header id="hud-top" class="hud-top" role="banner">
-      <div class="hud-brand">
-        <span class="brand-badge" aria-hidden="true">ASMR</span>
-        <h1 id="hud-title" class="brand-title">Prototype &amp; CatNap 精密修复工坊</h1>
+  <main class="studio" id="studio">
+    <!-- Minimalist icon-only floating top pill toolbar (inspired by critters-coloring-game) -->
+    <header class="toolbar" id="toolbar" role="banner">
+      <!-- Visual 24-step gallery drawer -->
+      <button class="icon-btn" id="btn-chapters" aria-label="All 24 Scenes" title="Scenes (01/24)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.6"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.6"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.6"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.6"/>
+        </svg>
+      </button>
+
+      <span class="sep" aria-hidden="true"></span>
+
+      <!-- Episode switcher (icon-only circular buttons) -->
+      <div class="btn-group" role="tablist" aria-label="Episodes">
+        <button class="icon-btn ep-btn active" id="btn-ep-prototype" role="tab" aria-selected="true" data-ep="prototype" aria-label="Episode 1: The Prototype 1006" title="EP.1 Prototype 1006">
+          <span class="emoji-ico" aria-hidden="true">🃏</span>
+        </button>
+        <button class="icon-btn ep-btn" id="btn-ep-catnap" role="tab" aria-selected="false" data-ep="catnap" aria-label="Episode 2: CatNap Plush" title="EP.2 CatNap">
+          <span class="emoji-ico" aria-hidden="true">🐱</span>
+        </button>
       </div>
 
-      <div class="hud-episodes" role="tablist" aria-label="Episodes">
-        <button id="btn-ep-prototype" class="ep-tab active" role="tab" aria-selected="true" data-ep="prototype">
-          <span class="ep-icon" aria-hidden="true">🃏</span>
-          <span class="ep-label" data-i18n="epPrototype">EP.1 原型机 1006</span>
+      <span class="sep" aria-hidden="true"></span>
+
+      <!-- Step navigation + compact visual progress bar -->
+      <div class="btn-group step-nav-group">
+        <button class="icon-btn" id="btn-prev-step" aria-label="Previous Step" title="Previous">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
         </button>
-        <button id="btn-ep-catnap" class="ep-tab" role="tab" aria-selected="false" data-ep="catnap">
-          <span class="ep-icon" aria-hidden="true">🐱</span>
-          <span class="ep-label" data-i18n="epCatnap">EP.2 瞌睡猫 CatNap</span>
+
+        <div class="progress-capsule" id="progress-capsule" title="Step Progress">
+          <span class="step-badge" id="step-counter">01/24</span>
+          <div class="mini-track">
+            <div class="mini-fill" id="step-progress-fill" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <button class="icon-btn" id="btn-next-step" aria-label="Next Step" title="Next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+
+        <button class="icon-btn assist-ico-btn" id="btn-auto-assist" aria-label="Guide / Auto Step" title="Guide">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2.5l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.9z"/>
+            <path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z" fill="currentColor" stroke="none"/>
+          </svg>
         </button>
       </div>
 
-      <div class="hud-controls">
-        <button id="btn-chapters" class="icon-btn" title="Step Selector">
-          <span aria-hidden="true">📋</span>
-          <span id="step-counter">01/24</span>
+      <span class="sep" aria-hidden="true"></span>
+
+      <!-- Utility icon actions -->
+      <div class="btn-group">
+        <button class="icon-btn active-soft" id="btn-audio" aria-label="Toggle ASMR Sound" aria-pressed="true" title="ASMR Sound">
+          <svg class="ico-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+            <path d="M19 5a9.5 9.5 0 0 1 0 14"/>
+          </svg>
+          <svg class="ico-sound-off hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <line x1="22" y1="9" x2="16" y2="15"/>
+            <line x1="16" y1="9" x2="22" y2="15"/>
+          </svg>
         </button>
-        <button id="btn-audio" class="icon-btn active" title="ASMR Audio" aria-pressed="true">
-          <span id="audio-icon" aria-hidden="true">🔊</span>
-          <span class="btn-text" data-i18n="audioOn">ASMR</span>
+
+        <button class="icon-btn active-soft" id="btn-spooky" aria-label="Toggle Spooky or Cozy Finale" aria-pressed="true" title="Spooky / Cozy Finale">
+          <span class="emoji-ico" id="spooky-icon" aria-hidden="true">👻</span>
         </button>
-        <button id="btn-spooky" class="icon-btn active" title="Spooky / Cozy Finale Mode" aria-pressed="true">
-          <span id="spooky-icon" aria-hidden="true">👻</span>
-          <span id="spooky-label" class="btn-text">惊悚结局</span>
-        </button>
-        <button id="btn-lang" class="icon-btn" title="Switch Language">
-          <span id="lang-label">EN</span>
-        </button>
-        <button id="btn-reset" class="icon-btn danger" title="Restart Current Episode">
-          <span aria-hidden="true">↺</span>
-        </button>
+
+        <!-- Inline visual-only reset confirmation (zero dialog popups!) -->
+        <div class="clear-wrap" id="reset-wrap">
+          <button class="icon-btn" id="btn-reset" aria-label="Restart Episode" title="Restart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+              <polyline points="3 3 3 8 8 8"/>
+            </svg>
+          </button>
+          <div class="clear-confirm hidden" id="reset-confirm">
+            <button class="icon-btn confirm-yes" id="btn-reset-yes" aria-label="Confirm Restart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </button>
+            <button class="icon-btn confirm-no" id="btn-reset-no" aria-label="Cancel Restart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
-    <!-- Dedicated Unobstructed Step Instruction Strip -->
-    <section id="step-banner" class="step-banner" aria-live="polite">
-      <div class="step-banner-row">
-        <div class="step-meta">
-          <span id="step-room-tag" class="room-tag">LAB DESK · 0:45</span>
-          <span id="step-name" class="step-name">拔出额头匕首</span>
+    <!-- Full-bleed central 16:9 interactive stage -->
+    <section class="stage" id="stage">
+      <div class="canvas-frame" id="canvas-frame">
+        <canvas id="stage-canvas" width="1280" height="720" aria-label="ASMR Doll Restoration Interactive Stage"></canvas>
+
+        <!-- Compact visual feedback badge (icon-led, auto-hides) -->
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+        <!-- Compact floating finale action pill (zero giant text wall!) -->
+        <div class="finale-pill hidden" id="overlay-finale" role="dialog" aria-label="Episode Complete">
+          <button class="finale-action-btn primary" id="btn-finale-next" aria-label="Next Episode">
+            <span class="emoji-ico" id="finale-next-emoji" aria-hidden="true">🐱</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+          <button class="finale-action-btn secondary" id="btn-finale-replay" aria-label="Replay Episode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+              <polyline points="3 3 3 8 8 8"/>
+            </svg>
+          </button>
         </div>
-        <p id="step-hint" class="step-hint">按住匕首向上拔出，清理原型机头骨面具</p>
-      </div>
-      <div class="step-progress-track" aria-label="Step Progress">
-        <div id="step-progress-fill" class="step-progress-fill" style="width: 0%"></div>
       </div>
     </section>
 
-    <!-- Main Interactive Stage -->
-    <main id="stage-wrap" class="stage-wrap">
-      <div id="canvas-frame" class="canvas-frame">
-        <canvas id="stage-canvas" width="1280" height="720" aria-label="ASMR Doll Restoration Interactive Stage"></canvas>
-
-        <!-- Subtle Toast Feedback -->
-        <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-        <!-- Title / Intro Overlay -->
-        <section id="overlay-intro" class="overlay-card visible" aria-label="Welcome">
-          <div class="intro-inner">
-            <div class="intro-eyebrow">SMILE BAM ASMR · 6Nw7Hi4Xr9s · 24-STEP FAITHFUL RECREATION</div>
-            <h2 id="intro-heading" class="intro-heading">废弃原型机 &amp; 瞌睡猫 ASMR 修复工坊</h2>
-            <p id="intro-sub" class="intro-sub">
-              极高精度还原 14:41 完整双篇剧情：从白色瓷砖实验室换脑、CRT 脑波同步、绿色实验舱装脊柱肋骨、经典铁柜装蜘蛛腿与利爪泡沫冲洗，到 Playcare 拧灯泡、SMILE BAM 滚筒洗衣机、木质裁缝台选错布料彩蛋与最终红光觉醒。
-            </p>
-            <div class="intro-choices">
-              <button id="btn-start-prototype" class="cta-btn primary">
-                <span class="cta-icon" aria-hidden="true">🃏</span>
-                <span class="cta-body">
-                  <strong data-i18n="startProtoTitle">开始 EP.1：原型机 1006</strong>
-                  <small data-i18n="startProtoSub">00:00–06:35 · 12 步精密机械修复</small>
-                </span>
-              </button>
-              <button id="btn-start-catnap" class="cta-btn secondary">
-                <span class="cta-icon" aria-hidden="true">🐱</span>
-                <span class="cta-body">
-                  <strong data-i18n="startCatnapTitle">直接玩 EP.2：瞌睡猫 CatNap</strong>
-                  <small data-i18n="startCatnapSub">06:40–14:41 · 12 步毛绒洗护缝补</small>
-                </span>
-              </button>
-            </div>
-            <div class="intro-resume-wrap" id="intro-resume-wrap" hidden>
-              <button id="btn-resume-save" class="resume-btn">▶ 继续上次进度</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- Finale / Episode Complete Overlay -->
-        <section id="overlay-finale" class="overlay-card" aria-label="Episode Complete" hidden>
-          <div class="finale-inner">
-            <div id="finale-badge" class="finale-badge">RESTORATION COMPLETE</div>
-            <h2 id="finale-title" class="finale-title">原型机 1006 修复觉醒！</h2>
-            <p id="finale-desc" class="finale-desc">全部 12 道修复工序完成，系统已进入红光觉醒状态。</p>
-            <div class="finale-actions">
-              <button id="btn-finale-next" class="cta-btn primary">
-                <span id="finale-next-label">进入 EP.2：修复瞌睡猫 CatNap →</span>
-              </button>
-              <button id="btn-finale-replay" class="cta-btn secondary">
-                <span data-i18n="replayEp">重玩本篇</span>
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-
-    <!-- Bottom Tactile Tool & Action Dock -->
-    <footer id="tool-dock" class="tool-dock" role="toolbar" aria-label="Restoration Tools">
-      <div class="dock-left">
-        <button id="btn-prev-step" class="nav-step-btn" title="Previous Step" aria-label="Previous Step">◀</button>
-      </div>
-      <div id="tool-tray" class="tool-tray" role="group" aria-label="Tools"></div>
-      <div class="dock-right">
-        <button id="btn-auto-assist" class="assist-btn" title="Guide / Quick Assist">
-          <span aria-hidden="true">✨</span>
-          <span data-i18n="assist">提示</span>
-        </button>
-        <button id="btn-next-step" class="nav-step-btn" title="Next Step" aria-label="Next Step">▶</button>
-      </div>
+    <!-- Streamlined floating bottom icon-only tool pill -->
+    <footer class="tool-pill" id="tool-dock" role="toolbar" aria-label="Restoration Tools">
+      <div class="tool-tray" id="tool-tray" role="group" aria-label="Tools"></div>
     </footer>
 
-    <!-- Slide-Over Step / Scene Map Drawer -->
-    <aside id="chapter-drawer" class="chapter-drawer" aria-label="All 24 Restoration Steps" hidden>
-      <div class="drawer-backdrop" id="drawer-backdrop"></div>
-      <div class="drawer-panel">
-        <div class="drawer-header">
-          <h2 id="drawer-title">完整 24 步场景目录 (youtu.be/6Nw7Hi4Xr9s)</h2>
-          <button id="btn-close-drawer" class="icon-btn" aria-label="Close">✕</button>
-        </div>
-        <div id="drawer-list" class="drawer-list"></div>
+    <!-- Pure visual 24-scene thumbnail gallery overlay (inspired by critters-coloring-game) -->
+    <div class="gallery-overlay hidden" id="chapter-drawer" role="dialog" aria-modal="true" aria-label="All 24 Scenes">
+      <div class="gallery-backdrop" id="drawer-backdrop"></div>
+      <div class="gallery-panel">
+        <button class="icon-btn gallery-close" id="btn-close-drawer" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+        <div class="gallery-grid" id="drawer-list"></div>
       </div>
-    </aside>
-  </div>
+    </div>
+  </main>
 
   <script src="js/data.js"></script>
   <script src="js/assets.js"></script>

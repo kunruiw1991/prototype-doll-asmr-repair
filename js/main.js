@@ -1,5 +1,6 @@
 /* ============================================================================
-   js/main.js — 60 FPS Interactive Stage Controller, Pointer Engine & HUD Sync
+   js/main.js — Streamlined Wordless Floating-Pill Controller & 60 FPS Stage
+   Instant play on load (zero blocking modals), crisp tactile tool pills
    ============================================================================ */
 (function (root) {
   'use strict';
@@ -7,7 +8,7 @@
   const LOGICAL_W = 1280;
   const LOGICAL_H = 720;
 
-  const { I18N, STEPS } = root.ASMRData;
+  const { STEPS } = root.ASMRData;
   const { ASMRAudio } = root.ASMRAudioEngine;
   const { RestorationState } = root.ASMRState;
   const { drawRoom } = root.ASMRRooms;
@@ -15,53 +16,51 @@
   const { drawCatNap } = root.ASMRCatNap;
   const { drawTargetGuide, drawHeldTool, drawParticles } = root.ASMRTools;
 
+  const ROOM_THUMB_MAP = {
+    lab_desk: 'assets/room_lab_desk.jpg',
+    lab_desk_crt: 'assets/room_crt_closeup.jpg',
+    green_chamber: 'assets/room_green_chamber.jpg',
+    steel_cabinet: 'assets/room_steel_cabinet.jpg',
+    playcare_room: 'assets/room_playcare.jpg',
+    laundry_room: 'assets/room_laundry.jpg',
+    tailor_bench: 'assets/room_tailor_bench.jpg',
+    tailor_bench_closeup: 'assets/room_tailor_bench.jpg'
+  };
+
   const state = new RestorationState(STEPS);
+  state.started = true; // Instant play on load — zero blocking intro wall!
   const audio = new ASMRAudio();
 
   // DOM References
   const canvas = document.getElementById('stage-canvas');
   const ctx = canvas.getContext('2d');
-  const hudTitle = document.getElementById('hud-title');
   const btnEpProto = document.getElementById('btn-ep-prototype');
   const btnEpCatnap = document.getElementById('btn-ep-catnap');
   const btnChapters = document.getElementById('btn-chapters');
   const stepCounter = document.getElementById('step-counter');
+  const stepProgressFill = document.getElementById('step-progress-fill');
   const btnAudio = document.getElementById('btn-audio');
-  const audioIcon = document.getElementById('audio-icon');
+  const icoSoundOn = btnAudio.querySelector('.ico-sound-on');
+  const icoSoundOff = btnAudio.querySelector('.ico-sound-off');
   const btnSpooky = document.getElementById('btn-spooky');
   const spookyIcon = document.getElementById('spooky-icon');
-  const spookyLabel = document.getElementById('spooky-label');
-  const btnLang = document.getElementById('btn-lang');
-  const langLabel = document.getElementById('lang-label');
   const btnReset = document.getElementById('btn-reset');
-  const stepRoomTag = document.getElementById('step-room-tag');
-  const stepNameEl = document.getElementById('step-name');
-  const stepHintEl = document.getElementById('step-hint');
-  const stepProgressFill = document.getElementById('step-progress-fill');
+  const resetConfirm = document.getElementById('reset-confirm');
+  const btnResetYes = document.getElementById('btn-reset-yes');
+  const btnResetNo = document.getElementById('btn-reset-no');
   const toastEl = document.getElementById('toast');
   const toolTray = document.getElementById('tool-tray');
   const btnPrev = document.getElementById('btn-prev-step');
   const btnNext = document.getElementById('btn-next-step');
   const btnAssist = document.getElementById('btn-auto-assist');
 
-  const overlayIntro = document.getElementById('overlay-intro');
-  const introHeading = document.getElementById('intro-heading');
-  const introSub = document.getElementById('intro-sub');
-  const btnStartProto = document.getElementById('btn-start-prototype');
-  const btnStartCatnap = document.getElementById('btn-start-catnap');
-  const introResumeWrap = document.getElementById('intro-resume-wrap');
-  const btnResumeSave = document.getElementById('btn-resume-save');
-
   const overlayFinale = document.getElementById('overlay-finale');
-  const finaleTitle = document.getElementById('finale-title');
-  const finaleDesc = document.getElementById('finale-desc');
   const btnFinaleNext = document.getElementById('btn-finale-next');
-  const finaleNextLabel = document.getElementById('finale-next-label');
+  const finaleNextEmoji = document.getElementById('finale-next-emoji');
   const btnFinaleReplay = document.getElementById('btn-finale-replay');
 
   const chapterDrawer = document.getElementById('chapter-drawer');
   const drawerBackdrop = document.getElementById('drawer-backdrop');
-  const drawerTitle = document.getElementById('drawer-title');
   const drawerList = document.getElementById('drawer-list');
   const btnCloseDrawer = document.getElementById('btn-close-drawer');
 
@@ -82,18 +81,13 @@
   let lastFrameTs = 0;
   let elapsedTime = 0;
 
-  function t(key) {
-    const dict = I18N[state.lang] || I18N.zh;
-    return dict[key] || key;
-  }
-
-  function showToast(msg) {
-    toastEl.textContent = msg;
+  function showToast(symbol) {
+    toastEl.textContent = symbol;
     toastEl.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
       toastEl.classList.remove('show');
-    }, 2200);
+    }, 1100);
   }
 
   function spawnParticles(x, y, toolId, count) {
@@ -136,49 +130,33 @@
     }
   }
 
+  function hideResetConfirm() {
+    resetConfirm.classList.add('hidden');
+    btnReset.classList.remove('hidden');
+  }
+
   /* ==========================================================================
-     UI SYNC
+     UI SYNC (Zero visible words — crisp icon states & progress pill only!)
      ========================================================================== */
   function syncUI() {
     const step = state.getCurrentStep();
-    const sub = state.getCurrentSubstep();
-    const lang = state.lang;
 
-    hudTitle.textContent = t('appTitle');
-    langLabel.textContent = lang === 'zh' ? 'EN' : '中文';
     btnEpProto.classList.toggle('active', step.episode === 'prototype');
     btnEpProto.setAttribute('aria-selected', String(step.episode === 'prototype'));
     btnEpCatnap.classList.toggle('active', step.episode === 'catnap');
     btnEpCatnap.setAttribute('aria-selected', String(step.episode === 'catnap'));
 
-    // Translate static data-i18n elements
-    document.querySelectorAll('[data-i18n]').forEach((el) => {
-      const key = el.getAttribute('data-i18n');
-      if (key && I18N[lang][key]) el.textContent = I18N[lang][key];
-    });
-
-    // Intro copy
-    introHeading.textContent = t('introHeading');
-    introSub.textContent = t('introSub');
-    btnResumeSave.textContent = t('resumeSave');
-    introResumeWrap.hidden = !state.hasSavedProgress();
-
-    // Audio & Spooky toggles
-    btnAudio.classList.toggle('active', state.audioEnabled);
+    btnAudio.classList.toggle('active-soft', state.audioEnabled);
     btnAudio.setAttribute('aria-pressed', String(state.audioEnabled));
-    audioIcon.textContent = state.audioEnabled ? '🔊' : '🔇';
+    icoSoundOn.classList.toggle('hidden', !state.audioEnabled);
+    icoSoundOff.classList.toggle('hidden', state.audioEnabled);
 
-    btnSpooky.classList.toggle('active', state.spookyFinale);
+    btnSpooky.classList.toggle('active-soft', state.spookyFinale);
     btnSpooky.setAttribute('aria-pressed', String(state.spookyFinale));
     spookyIcon.textContent = state.spookyFinale ? '👻' : '✨';
-    spookyLabel.textContent = state.spookyFinale ? t('spookyOn') : t('spookyOff');
 
-    // Step counter & banner
     const numStr = String(state.stepIndex + 1).padStart(2, '0');
     stepCounter.textContent = `${numStr}/${STEPS.length}`;
-    stepRoomTag.textContent = `${step.roomLabel[lang]} · ${step.timestamp}`;
-    stepNameEl.textContent = `${numStr}. ${step.title[lang]}`;
-    stepHintEl.textContent = sub ? sub[lang] : step.hint[lang];
     stepProgressFill.style.width = `${Math.round(state.getOverallStepProgress() * 100)}%`;
 
     btnPrev.disabled = state.stepIndex === 0;
@@ -191,7 +169,6 @@
   function renderToolTray() {
     const step = state.getCurrentStep();
     const target = state.getActiveTarget();
-    const lang = state.lang;
     toolTray.innerHTML = '';
 
     for (const tool of step.tools) {
@@ -199,27 +176,24 @@
       btn.type = 'button';
       btn.className = 'tool-btn';
       btn.dataset.toolId = tool.id;
+      btn.setAttribute('aria-label', tool.en);
+      btn.title = tool.en;
       if (state.activeTool === tool.id) btn.classList.add('active');
       if (target && target.tool === tool.id && !tool.wrongSwatch) btn.classList.add('recommended');
       if (tool.wrongSwatch && state.triedWrongSwatches.has(tool.wrongSwatch)) btn.classList.add('done');
 
-      btn.innerHTML = `<span class="tool-emoji" aria-hidden="true">${tool.emoji}</span><span class="tool-label">${tool[lang]}</span>`;
+      btn.innerHTML = `<span class="tool-emoji" aria-hidden="true">${tool.emoji}</span>`;
       btn.addEventListener('click', () => {
         audio.unlock();
         const res = state.selectTool(tool.id);
-        if (res.gag === 'yellow') {
+        if (res.gag === 'yellow' || res.gag === 'blue') {
           audio.play('wrongBuzzer');
           btn.classList.add('wrong');
-          showToast(t('wrongFabricYellow'));
-          setTimeout(() => btn.classList.remove('wrong'), 400);
-        } else if (res.gag === 'blue') {
-          audio.play('wrongBuzzer');
-          btn.classList.add('wrong');
-          showToast(t('wrongFabricBlue'));
-          setTimeout(() => btn.classList.remove('wrong'), 400);
+          showToast('❌');
+          setTimeout(() => btn.classList.remove('wrong'), 380);
         } else if (res.completedSubstep) {
           audio.play('plushGrab');
-          showToast(t('rightFabricPurple'));
+          showToast('🟪 ✅');
           spawnParticles(640, 440, 'airbrush', 14);
         } else {
           audio.play('plushGrab');
@@ -231,39 +205,32 @@
   }
 
   function renderDrawerList() {
-    const lang = state.lang;
-    drawerTitle.textContent = t('drawerTitle');
     drawerList.innerHTML = '';
-
-    const addHeader = (text) => {
-      const h = document.createElement('div');
-      h.className = 'drawer-section-title';
-      h.textContent = text;
-      drawerList.appendChild(h);
-    };
-
-    addHeader(t('secProto'));
     STEPS.forEach((step, idx) => {
-      if (idx === 12) addHeader(t('secCatnap'));
       const item = document.createElement('button');
       item.type = 'button';
       item.className = 'drawer-item';
+      item.setAttribute('aria-label', `${idx + 1}. ${step.title.en}`);
+      item.title = `${String(idx + 1).padStart(2, '0')} · ${step.timestamp}`;
       if (idx === state.stepIndex) item.classList.add('current');
       if (state.completedSteps.has(step.id)) item.classList.add('completed');
 
+      const bg = ROOM_THUMB_MAP[step.room] || 'assets/room_steel_cabinet.jpg';
+      item.style.backgroundImage = `url('${bg}')`;
+
       const num = String(idx + 1).padStart(2, '0');
-      const check = state.completedSteps.has(step.id) ? '✓' : num;
+      const badge = state.completedSteps.has(step.id) ? '✓' : num;
+      const epEmoji = step.episode === 'prototype' ? '🃏' : '🐱';
+      const primaryToolEmoji = step.tools[0] ? step.tools[0].emoji : '✨';
+
       item.innerHTML = `
-        <span class="drawer-num">${check}</span>
-        <span class="drawer-item-text">
-          <span class="drawer-item-title">${step.title[lang]}</span>
-          <span class="drawer-item-meta">${step.timestamp} · ${step.roomLabel[lang]}</span>
-        </span>
+        <span class="drawer-num">${badge}</span>
+        <span class="drawer-ep-dot" aria-hidden="true">${epEmoji}</span>
+        <span class="drawer-ico" aria-hidden="true">${primaryToolEmoji}</span>
       `;
       item.addEventListener('click', () => {
         clearAutoAdvance();
         hideOverlays();
-        state.started = true;
         state.goToStep(idx);
         closeDrawer();
         syncUI();
@@ -273,50 +240,32 @@
   }
 
   function openDrawer() {
-    chapterDrawer.hidden = false;
+    chapterDrawer.classList.remove('hidden');
   }
 
   function closeDrawer() {
-    chapterDrawer.hidden = true;
+    chapterDrawer.classList.add('hidden');
   }
 
   function hideOverlays() {
-    overlayIntro.classList.remove('visible');
-    overlayIntro.hidden = true;
-    overlayFinale.classList.remove('visible');
-    overlayFinale.hidden = true;
+    overlayFinale.classList.add('hidden');
   }
 
   function triggerFinaleUI(episode) {
     audio.play(state.spookyFinale ? 'spookyAwaken' : 'cozyFinale');
-    // Let the dramatic canvas finale animate for 1.8s before showing the clean action card
     clearAutoAdvance();
     autoAdvanceTimer = setTimeout(() => {
       if (state.finaleActive !== episode) return;
-      if (episode === 'prototype') {
-        finaleTitle.textContent = state.spookyFinale ? t('finaleProtoTitle') : t('finaleProtoCozyTitle');
-        finaleDesc.textContent = t('finaleProtoDesc');
-        finaleNextLabel.textContent = t('finaleProtoNext');
-      } else {
-        finaleTitle.textContent = state.spookyFinale ? t('finaleCatnapTitle') : t('finaleCatnapCozyTitle');
-        finaleDesc.textContent = t('finaleCatnapDesc');
-        finaleNextLabel.textContent = t('finaleCatnapNext');
-      }
-      overlayFinale.hidden = false;
-      requestAnimationFrame(() => overlayFinale.classList.add('visible'));
-    }, 1800);
+      finaleNextEmoji.textContent = episode === 'prototype' ? '🐱' : '🃏';
+      overlayFinale.classList.remove('hidden');
+    }, 1500);
   }
 
   function handleProgressResult(res, fxX, fxY) {
     if (!res) return;
     if (res.completedSubstep) {
       spawnParticles(fxX, fxY, state.activeTool, 16);
-      if (res.prevSubKey === 'open_fridge') showToast(t('fridgeOpened'));
-      else if (res.prevSubKey === 'open_locker') showToast(t('lockerOpened'));
-      else if (res.prevSubKey === 'open_doors') showToast(t('cabinetOpened'));
-      else if (res.prevSubKey === 'check_report') showToast(t('reportChecked'));
-      else if (res.prevSubKey === 'pour_detergent') showToast(t('washerLoaded'));
-      else if (res.prevSubKey === 'screw_bulb') audio.play('bulbOn');
+      if (res.prevSubKey === 'screw_bulb') audio.play('bulbOn');
       else if (res.sound) audio.play(res.sound);
     }
 
@@ -325,12 +274,12 @@
         triggerFinaleUI(res.triggersFinale);
       } else {
         audio.play('stepComplete');
-        showToast(t('stepComplete'));
+        showToast('✨');
         clearAutoAdvance();
         autoAdvanceTimer = setTimeout(() => {
           state.nextStep();
           syncUI();
-        }, 780);
+        }, 720);
       }
     }
     syncUI();
@@ -355,8 +304,9 @@
   }
 
   canvas.addEventListener('pointerdown', (e) => {
-    if (!state.started || state.finaleActive) return;
+    if (state.finaleActive) return;
     audio.unlock();
+    hideResetConfirm();
     canvas.setPointerCapture(e.pointerId);
     const pt = clientToLogical(e.clientX, e.clientY);
     pointer.x = pt.x;
@@ -373,25 +323,22 @@
 
     if (!pointer.insideTarget) return;
 
-    // Auto-equip the matching recommended tool if player directly taps the active zone
     if (target.tool && state.activeTool !== target.tool && step.mode !== 'fabric') {
       state.selectTool(target.tool);
       syncUI();
     }
 
     if (step.mode === 'fabric' && state.substepIndex === 0) {
-      // Clicking canvas during fabric selection auto-selects CATNAP purple cleanly
       const res = state.selectTool('swatch_purple');
       if (res.completedSubstep) {
         audio.play('plushGrab');
-        showToast(t('rightFabricPurple'));
+        showToast('🟪 ✅');
         spawnParticles(pt.x, pt.y, 'airbrush', 14);
         syncUI();
       }
       return;
     }
 
-    // Immediate discrete action steps (non-scrub, non-pull)
     if (step.mode !== 'pull' && !target.scrubRequired) {
       audio.play(target.sound);
       const res = state.advanceSubstep();
@@ -399,7 +346,6 @@
       return;
     }
 
-    // For scrub / hold steps, give immediate tactile burst on tap too
     if (target.scrubRequired) {
       audio.play(target.sound, 90);
       spawnParticles(pt.x, pt.y, state.activeTool, 5);
@@ -416,15 +362,13 @@
     pointer.lastX = pt.x;
     pointer.lastY = pt.y;
 
-    if (!pointer.down || !state.started || state.finaleActive) return;
+    if (!pointer.down || state.finaleActive) return;
     const step = state.getCurrentStep();
     const target = state.getActiveTarget();
     pointer.insideTarget = isInsideTarget(pt, target, 55);
 
     if (step.mode === 'pull') {
-      const vx = pt.x - pointer.startX;
-      const vy = pt.y - pointer.startY;
-      const pullMag = Math.hypot(vx, vy);
+      const pullMag = Math.hypot(pt.x - pointer.startX, pt.y - pointer.startY);
       const frac = Math.min(1, pullMag / 115);
       if (frac > state.progress) {
         audio.play(target.sound, 160);
@@ -445,9 +389,8 @@
   });
 
   function onPointerRelease() {
-    if (pointer.down && state.started && !state.finaleActive) {
+    if (pointer.down && !state.finaleActive) {
       const step = state.getCurrentStep();
-      // Forgiving tap-pull fallback on Step 1 if a kid taps the dagger instead of dragging
       if (step.mode === 'pull' && pointer.insideTarget && state.progress < 0.99) {
         const res = state.addProgress(0.36);
         audio.play(step.sound);
@@ -468,40 +411,13 @@
   });
 
   /* ==========================================================================
-     BUTTON HANDLERS & KEYBOARD SHORTCUTS
+     TOOLBAR BUTTONS & KEYBOARD SHORTCUTS
      ========================================================================== */
-  btnStartProto.addEventListener('click', () => {
-    audio.unlock();
-    audio.play('plushGrab');
-    state.started = true;
-    hideOverlays();
-    state.selectEpisode('prototype');
-    syncUI();
-  });
-
-  btnStartCatnap.addEventListener('click', () => {
-    audio.unlock();
-    audio.play('plushGrab');
-    state.started = true;
-    hideOverlays();
-    state.selectEpisode('catnap');
-    syncUI();
-  });
-
-  btnResumeSave.addEventListener('click', () => {
-    audio.unlock();
-    audio.play('plushGrab');
-    state.load();
-    state.started = true;
-    hideOverlays();
-    syncUI();
-  });
-
   btnEpProto.addEventListener('click', () => {
     clearAutoAdvance();
     audio.unlock();
-    state.started = true;
     hideOverlays();
+    hideResetConfirm();
     state.selectEpisode('prototype');
     syncUI();
   });
@@ -509,8 +425,8 @@
   btnEpCatnap.addEventListener('click', () => {
     clearAutoAdvance();
     audio.unlock();
-    state.started = true;
     hideOverlays();
+    hideResetConfirm();
     state.selectEpisode('catnap');
     syncUI();
   });
@@ -518,7 +434,6 @@
   btnPrev.addEventListener('click', () => {
     clearAutoAdvance();
     hideOverlays();
-    state.started = true;
     state.prevStep();
     syncUI();
   });
@@ -526,14 +441,13 @@
   btnNext.addEventListener('click', () => {
     clearAutoAdvance();
     hideOverlays();
-    state.started = true;
     state.nextStep();
     syncUI();
   });
 
   btnAssist.addEventListener('click', () => {
     audio.unlock();
-    if (!state.started || state.finaleActive) return;
+    if (state.finaleActive) return;
     const target = state.getActiveTarget();
     if (target.tool && state.activeTool !== target.tool) {
       state.selectTool(target.tool);
@@ -556,16 +470,18 @@
     syncUI();
   });
 
-  btnLang.addEventListener('click', () => {
-    state.lang = state.lang === 'zh' ? 'en' : 'zh';
-    state.save();
-    syncUI();
+  // Inline visual-only reset confirmation (zero alert boxes!)
+  btnReset.addEventListener('click', () => {
+    btnReset.classList.add('hidden');
+    resetConfirm.classList.remove('hidden');
   });
 
-  btnReset.addEventListener('click', () => {
+  btnResetNo.addEventListener('click', hideResetConfirm);
+
+  btnResetYes.addEventListener('click', () => {
+    hideResetConfirm();
     clearAutoAdvance();
     hideOverlays();
-    state.started = true;
     state.resetCurrentEpisode();
     syncUI();
   });
@@ -590,14 +506,17 @@
   });
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeDrawer();
-    if (!state.started) return;
-    if (e.key === 'ArrowRight') {
+    if (e.key === 'Escape') {
+      closeDrawer();
+      hideResetConfirm();
+    } else if (e.key === 'ArrowRight') {
       clearAutoAdvance();
+      hideOverlays();
       state.nextStep();
       syncUI();
     } else if (e.key === 'ArrowLeft') {
       clearAutoAdvance();
+      hideOverlays();
       state.prevStep();
       syncUI();
     } else if (e.key === ' ') {
@@ -614,14 +533,12 @@
     lastFrameTs = ts;
     elapsedTime += dt;
 
-    // Update wrong swatch flash timer
     if (state.wrongSwatchTimer > 0) {
       state.wrongSwatchTimer = Math.max(0, state.wrongSwatchTimer - dt);
       if (state.wrongSwatchTimer === 0) state.wrongSwatchFlash = null;
     }
 
-    // Continuous hold progress for scrub/hold steps (great for iPad single-finger hold!)
-    if (pointer.down && pointer.insideTarget && state.started && !state.finaleActive) {
+    if (pointer.down && pointer.insideTarget && !state.finaleActive) {
       const target = state.getActiveTarget();
       if (target.scrubRequired) {
         audio.play(target.sound, 140);
@@ -635,7 +552,6 @@
       }
     }
 
-    // Update particles
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.life -= dt;
@@ -648,13 +564,11 @@
       p.vy += 180 * dt;
     }
 
-    // Render Stage
     ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
     const step = state.getCurrentStep();
     const isProto = step.episode === 'prototype';
     const visuals = isProto ? state.getPrototypeVisuals() : state.getCatNapVisuals();
 
-    // During Prototype Finale, show Lab Desk with Red Alert!
     const activeRoom = (state.finaleActive === 'prototype') ? 'lab_desk' : step.room;
     drawRoom(ctx, LOGICAL_W, LOGICAL_H, activeRoom, visuals, elapsedTime);
 
@@ -664,8 +578,7 @@
       drawCatNap(ctx, LOGICAL_W, LOGICAL_H, visuals, elapsedTime, activeRoom);
     }
 
-    // Draw Target Guide & Active Cursor Tool
-    if (state.started && !state.finaleActive) {
+    if (!state.finaleActive) {
       const target = state.getActiveTarget();
       drawTargetGuide(ctx, target, step.mode, elapsedTime, pointer.down && pointer.insideTarget);
       if (pointer.x != null && pointer.y != null) {
@@ -674,13 +587,11 @@
     }
 
     drawParticles(ctx, particles);
-
     requestAnimationFrame(tick);
   }
 
   const assetsReady = root.ASMRAssets ? root.ASMRAssets.loadAll() : Promise.resolve();
 
-  // Expose clean inspection API for E2E tests and QA scripts
   root.__GAME__ = {
     state,
     audio,
@@ -692,7 +603,6 @@
       clearTimeout(toastTimer);
       toastEl.classList.remove('show');
       hideOverlays();
-      state.started = true;
       state.goToStep(idx);
       syncUI();
     },
@@ -704,7 +614,6 @@
     }
   };
 
-  // Boot
   syncUI();
   requestAnimationFrame(tick);
 })(window);
